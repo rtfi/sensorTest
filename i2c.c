@@ -21,15 +21,15 @@ void initI2C()
 
     I2C1CONbits.I2CEN=1;    //Enable I2C. Use I2C1CONbits because pins 17 and 18 are SDA1 and SCL1.
     IFS1bits.MI2C1IF=0;
-    I2C1BRG = 36;   //I got this value form the I2C baud rate table in the PIC24 datasheet.
+    I2C1BRG = 35;   //I got this value form the I2C baud rate table in the PIC24 datasheet.
     
 }
 
 void sendI2C(char data)
 {
     //while interrupt flag for master is down
-    while(IFS1bits.MI2C1IF == 0);
-    IFS1bits.MI2C1IF=0;
+    //while(IFS1bits.MI2C1IF == 0);
+    //IFS1bits.MI2C1IF=0;
 
     //address of i2c device
     I2C1TRN = data;
@@ -43,8 +43,8 @@ void sendI2C(char data)
 
     }
 
-    while(IFS1bits.MI2C1IF == 0);
-    IFS1bits.MI2C1IF=0;
+    //while(IFS1bits.MI2C1IF == 0);
+    //IFS1bits.MI2C1IF=0;
 }
 
 char receiveI2C()
@@ -52,8 +52,8 @@ char receiveI2C()
     char c;
 
     //while interrupt flag for master is down
-    while(IFS1bits.MI2C1IF == 0);
-    IFS1bits.MI2C1IF=0;
+    //while(IFS1bits.MI2C1IF == 0);
+    //IFS1bits.MI2C1IF=0;
 
     //wait until i2c receiver buffer is full
     while(I2C1STATbits.RBF==0);
@@ -63,8 +63,8 @@ char receiveI2C()
     I2C1CONbits.ACKDT = 0; //0 ACK or 1 for NACK
     I2C1CONbits.ACKEN = 1; //enable acknowledge
 
-    while(IFS1bits.MI2C1IF == 0);
-    IFS1bits.MI2C1IF=0;
+    //while(IFS1bits.MI2C1IF == 0);
+    //IFS1bits.MI2C1IF=0;
 
     return c;
     

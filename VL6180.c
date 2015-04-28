@@ -121,10 +121,11 @@ char getRegister(int regAddress)
     byte=(regAddress & 0x00FF);    //send lower byte of 16-bit index of register.
     sendI2C(byte);
 
-    I2C1CONbits.PEN=1;    //stop, start condition to start reading
-    I2C1CONbits.SEN=1;
-
+    I2C1CONbits.RSEN=1;  //stop, start condition to start reading
+    
     sendI2C(0x53);    //send 7-bit I2C address and read bit
+
+    I2C1CONbits.RCEN=1;
 
     c=receiveI2C();
 
