@@ -13,7 +13,9 @@ void setRegister(char data, int regAddress);
 
 void initSensor();
 void startRangeFinding();
-
+int getRange();
+void pollRange();
+void clearInterrupts();
 
 #endif	/* VL6180_H */
 

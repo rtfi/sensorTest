@@ -14,8 +14,8 @@
 void initI2C()
 {
     //might not be necessary, but we're using pins 17 and 18 as the I2C clock and data pins
-    TRISBbits.TRISB8=OUTPUT;
-    TRISBbits.TRISB9=OUTPUT;
+    //TRISBbits.TRISB8=OUTPUT;
+    //TRISBbits.TRISB9=OUTPUT;
 
     //No need to set any AD1PCFG bits to digital, because pins 17 and 18 are not analog pins.
 
