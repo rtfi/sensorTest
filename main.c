@@ -10,6 +10,14 @@ int main(void)
 
     initLED();
     initI2C();
+    /*I2C2CONbits.SEN=1;
+    while(1)
+    {
+       // turnLEDON();
+        sendI2C(0x00);
+       
+    }*/
+
     initSensor();
     startRangeFinding();
 

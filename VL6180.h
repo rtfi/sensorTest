@@ -8,7 +8,7 @@
 #ifndef VL6180_H
 #define	VL6180_H
 
-char getRegister(int regAddress);
+int getRegister(int regAddress);
 void setRegister(char data, int regAddress);
 
 void initSensor();
