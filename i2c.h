@@ -13,5 +13,7 @@ void initI2C();
 void sendI2C(char data);
 int receiveI2C();
 
+void reset_i2c_bus();
+
 #endif	/* I2C_H */
 

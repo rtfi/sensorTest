@@ -4,7 +4,7 @@
  VL6180.c
  */
 
-#include "i2c.h"
+#include "bitbang.h"
 #include "p24FJ64GA002.h"
 #include "VL6180.h"
 #include "timer.h"
@@ -29,7 +29,7 @@ void initSensor()
 {
     char reset;
     reset=getRegister(SYSTEM_FRESH_OUT_OF_RESET);
-    reset=1;
+    //reset=1;
     if(reset==1)
     {
     // Mandatory : private registers
@@ -64,8 +64,8 @@ void initSensor()
     setRegister(0x1f,0x01a7);
     setRegister(0x00,0x0030);
     
-    setRegister(0x0004,SYSTEM_INTERRUPT_CONFIG_GPIO);
-    setRegister(0x0020,SYSTEM_MODE_GPIO1);    //maybe send 0x10 rather than 0x30
+    //setRegister(0x0004,SYSTEM_INTERRUPT_CONFIG_GPIO);
+    //setRegister(0x0020,SYSTEM_MODE_GPIO1);    //maybe send 0x10 rather than 0x30
     setRegister(0x0030,READOUT_AVERAGING_SAMPLE_PERIOD);    //4.3ms
     setRegister(0x0032,SYSRANGE_MAX_CONVERGENCE_TIME);  // 50ms
     setRegister(0x0006,SYSRANGE_INTERMEASUREMENT_PERIOD);   //70ms
@@ -120,7 +120,10 @@ void setRegister(char data, int regAddress)
 {
     char byte;
 
+    I2C2CONbits.ACKDT=0;
     I2C2CONbits.SEN=1;  //start bit
+    while(I2C2CONbits.SEN);
+    delayUs(2);
 
     sendI2C(0x52);  //send 7-bit I2C address and write byte
 
@@ -133,6 +136,7 @@ void setRegister(char data, int regAddress)
     sendI2C(data);    //send 8-bits of data to register
 
     I2C2CONbits.PEN=1;    //stop
+    reset_i2c_bus();
 
     return;
 }
@@ -142,9 +146,10 @@ int getRegister(int regAddress)
     char byte;
     int c=0;
 
-   
-    //I2C1CONbits.SEN=1;    //start bit
+    I2C2CONbits.ACKDT=0;
     I2C2CONbits.SEN=1;
+    while(I2C2CONbits.SEN);
+    delayUs(2);
     
     sendI2C(0x52);    //write
 
@@ -154,7 +159,8 @@ int getRegister(int regAddress)
     byte=(regAddress & 0x00FF);    //send lower byte of 16-bit index of register.
     sendI2C(byte);
 
-    //I2C2CONbits.RSEN=1;  //stop, start condition to start reading
+    I2C2CONbits.RSEN=1;  //stop, start condition to start reading
+    while(I2C2CONbits.RSEN==1);
     
     sendI2C(0x53);    //send 7-bit I2C address and read bit
 
@@ -163,6 +169,7 @@ int getRegister(int regAddress)
     c=receiveI2C();
 
     I2C2CONbits.PEN=1;
+    reset_i2c_bus();
 
     return c;
 

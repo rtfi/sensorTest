@@ -37,10 +37,8 @@ void initI2C()
 void sendI2C(char data)
 {
     int testAck=0;
-    //master will raise interrupt flag once start condition is complete.
    
-    while(I2C2CONbits.SEN==1);
-    //IFS3bits.MI2C2IF=0;
+    IFS3bits.MI2C2IF=0;
     
     //load data into transmit register
     I2C2TRN = data;
@@ -53,32 +51,55 @@ void sendI2C(char data)
     {
         testAck=1;
     }
-    
-    //while(IFS3bits.MI2C2IF == 0);
-    //IFS3bits.MI2C2IF=0;
+
+    delayUs(2);
+
+    return;
 }
 
 int receiveI2C()
 {
-    int c;
-
-    //while interrupt flag for master is down
-    while(IFS3bits.MI2C2IF == 0);
-    IFS3bits.MI2C2IF=0;
+    int c=0;
+    int i=0;
 
     
     //wait until i2c receiver buffer is full
-    while(!I2C2STATbits.RBF);
+    while(!I2C2STATbits.RBF)
+    {
+        i++;
+        if(i>2000)
+            break;
+    }
     //I2C2STATbits.RBF=0;
 
     c=I2C2RCV;
 
-    I2C2CONbits.ACKDT = 0; //0 ACK or 1 for NACK
+    //I2C2CONbits.ACKDT = 0; //0 ACK or 1 for NACK
     I2C2CONbits.ACKEN = 1; //enable acknowledge
 
-    //while(IFS1bits.MI2C1IF == 0);
-    //IFS1bits.MI2C1IF=0;
+    delayUs(10);
    
     return c;
     
+}
+
+void reset_i2c_bus(void)
+{
+   int x = 0;
+
+   //initiate stop bit
+   I2C2CONbits.PEN = 1;
+
+   //wait for hardware clear of stop bit
+   while (I2C2CONbits.PEN)
+   {
+      delayUs(1);
+      x ++;
+      if (x > 20) break;
+   }
+   I2C2CONbits.RCEN = 0;
+   IFS3bits.MI2C2IF = 0; // Clear Interrupt
+   I2C2STATbits.IWCOL = 0;
+   I2C2STATbits.BCL = 0;
+   delayUs(10);
 }
