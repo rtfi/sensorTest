@@ -14,5 +14,8 @@ int getRange();
 void pollRange();
 void clearInterrupts();
 
+void setRegister(char data, int regAddress);
+int getRegister(int regAddress);
+
 #endif	/* VL6180_H */
 

@@ -4,9 +4,9 @@
  VL6180.c
  */
 
-#include "bitbang.h"
 #include "p24FJ64GA002.h"
 #include "VL6180.h"
+#include "i2c.h"
 #include "timer.h"
 
 #define I2CADDRESS 0x0029
@@ -64,11 +64,16 @@ void initSensor()
     setRegister(0x1f,0x01a7);
     setRegister(0x00,0x0030);
     
-    //setRegister(0x0004,SYSTEM_INTERRUPT_CONFIG_GPIO);
+    setRegister(0x0004,SYSTEM_INTERRUPT_CONFIG_GPIO);
     //setRegister(0x0020,SYSTEM_MODE_GPIO1);    //maybe send 0x10 rather than 0x30
     setRegister(0x0030,READOUT_AVERAGING_SAMPLE_PERIOD);    //4.3ms
     setRegister(0x0032,SYSRANGE_MAX_CONVERGENCE_TIME);  // 50ms
     setRegister(0x0006,SYSRANGE_INTERMEASUREMENT_PERIOD);   //70ms
+
+    setRegister(0x10,0x11);
+    setRegister(0x30,0x10A);
+    setRegister(0x46,0x3F);
+    setRegister(0xFF,0x31);
 
     setRegister(0x07,SYSTEM_FRESH_OUT_OF_RESET);    //clear reset flag.
     }
@@ -96,12 +101,13 @@ void pollRange()
     char status;
     char range_status;
 
-    status=getRegister(RESULT_INTERRUPT_STATUS_GPIO);   //raw status value in hex from 8-bit register
-    range_status=status & 0x07; // this gets us the lower three bits we want to look at.
+    //status=getRegister(RESULT_INTERRUPT_STATUS_GPIO);   //raw status value in hex from 8-bit register
+    //range_status=status & 0x07; // this gets us the lower three bits we want to look at.
 
     //0x04 means that there is a new sample ready.
     while(range_status!=0x04)
     {
+        //status=get_data(0x29,RESULT_INTERRUPT_STATUS_GPIO);
         status=getRegister(RESULT_INTERRUPT_STATUS_GPIO);
         range_status=status & 0x07;
         delayUs(1000);  //wait 1ms before checking for status again.
@@ -120,23 +126,21 @@ void setRegister(char data, int regAddress)
 {
     char byte;
 
-    I2C2CONbits.ACKDT=0;
     I2C2CONbits.SEN=1;  //start bit
     while(I2C2CONbits.SEN);
-    delayUs(2);
 
     sendI2C(0x52);  //send 7-bit I2C address and write byte
 
-    byte=(regAddress & 0xFF00) >> 8;    //send high byte of 16-bit index of register.
+    byte=((char)regAddress & 0xFF00) >> 8;    //send high byte of 16-bit index of register.
     sendI2C(byte);
 
-    byte=(regAddress & 0x00FF);    //send lower byte of 16-bit index of register.
+    byte=((char)regAddress & 0x00FF);    //send lower byte of 16-bit index of register.
     sendI2C(byte);
 
     sendI2C(data);    //send 8-bits of data to register
 
     I2C2CONbits.PEN=1;    //stop
-    reset_i2c_bus();
+    while(I2C2CONbits.PEN);
 
     return;
 }
@@ -146,30 +150,32 @@ int getRegister(int regAddress)
     char byte;
     int c=0;
 
-    I2C2CONbits.ACKDT=0;
     I2C2CONbits.SEN=1;
     while(I2C2CONbits.SEN);
-    delayUs(2);
     
     sendI2C(0x52);    //write
 
-    byte=(regAddress & 0xFF00) >> 8;    //send high byte of 16-bit index of register.
+    byte=((char)regAddress & 0xFF00) >> 8;    //send high byte of 16-bit index of register.
     sendI2C(byte);
 
-    byte=(regAddress & 0x00FF);    //send lower byte of 16-bit index of register.
+    byte=((char)regAddress & 0x00FF);    //send lower byte of 16-bit index of register.
     sendI2C(byte);
 
-    I2C2CONbits.RSEN=1;  //stop, start condition to start reading
-    while(I2C2CONbits.RSEN==1);
+    I2C2CONbits.PEN = 1;
+    //wait
+    while(I2C2CONbits.PEN);
+    I2C2CONbits.SEN = 1;
+    //wait
+    while(I2C2CONbits.SEN);
     
     sendI2C(0x53);    //send 7-bit I2C address and read bit
 
-    I2C2CONbits.RCEN=1;
-
-    c=receiveI2C();
-
-    I2C2CONbits.PEN=1;
-    reset_i2c_bus();
+    I2C2CONbits.RCEN = 1;
+    while(I2C2STATbits.RBF == 0);
+    c = I2C2RCV;
+    I2C2CONbits.ACKDT = 1; //ACK or NACK
+    I2C2CONbits.ACKEN = 1; //enable acknowledge
+    while(I2C2CONbits.PEN);
 
     return c;
 
